@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Full Frame Admin</title>
+<title>Admin Dashboard</title>
 
 <style>
 body{
@@ -13,16 +13,13 @@ body{
   color:white;
 }
 
-/* HEADER */
 header{
   padding:15px;
   text-align:center;
   background:#111a2e;
-  font-size:18px;
   font-weight:bold;
 }
 
-/* USERS STACK */
 .container{
   display:flex;
   flex-direction:column;
@@ -30,42 +27,25 @@ header{
   padding:15px;
 }
 
-/* USER BOX */
 .userBox{
   background:#1e293b;
-  border-radius:15px;
   padding:12px;
+  border-radius:12px;
 }
 
-/* FULL FRAME IMAGE */
 .frame{
   width:100%;
   height:300px;
-  border-radius:12px;
   object-fit:cover;
+  border-radius:10px;
   background:#0f172a;
-}
-
-/* BUTTON */
-.btn{
-  margin-top:10px;
-  padding:8px 12px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:bold;
-}
-
-.deleteAll{
-  background:#dc2626;
-  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<header>📡 Live Full Frame Dashboard (Latest Image Only)</header>
+<header>📡 Live Admin Dashboard</header>
 
 <div class="container" id="grid"></div>
 
@@ -73,7 +53,6 @@ header{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-
 const firebaseConfig = {
   apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57O8ALtSkfNdMmrE",
   authDomain: "live-tracker-554a7.firebaseapp.com",
@@ -89,7 +68,7 @@ const db = firebase.database();
 
 const grid = document.getElementById("grid");
 
-db.ref("camera").on("value", (snap) => {
+db.ref("camera").on("value", (snap)=>{
 
   const data = snap.val();
   grid.innerHTML = "";
@@ -99,35 +78,29 @@ db.ref("camera").on("value", (snap) => {
     return;
   }
 
-  Object.keys(data).forEach(userId => {
+  Object.keys(data).forEach(userId=>{
 
     const box = document.createElement("div");
     box.className = "userBox";
 
     box.innerHTML = `
       <h3>👤 ${userId}</h3>
-
-      <button class="btn deleteAll" onclick="deleteAll('${userId}')">
-        🗑️ Delete All
-      </button>
-
-      <img id="img_${userId}" class="frame" src="" />
+      <img id="img_${userId}" class="frame">
     `;
 
     grid.appendChild(box);
 
-    loadLatestImage(userId);
+    loadLatest(userId);
 
   });
 
 });
 
-// 🔥 ONLY LATEST IMAGE
-function loadLatestImage(userId){
+function loadLatest(userId){
 
   const ref = db.ref("camera/" + userId);
 
-  ref.on("value", (snap) => {
+  ref.on("value", (snap)=>{
 
     const data = snap.val();
     const img = document.getElementById("img_" + userId);
@@ -137,34 +110,17 @@ function loadLatestImage(userId){
       return;
     }
 
-    // get last image
-    const keys = Object.keys(data);
-    const lastKey = keys[keys.length - 1];
-    const lastItem = data[lastKey];
+    const lastItem = Object.values(data).pop();
 
-    img.src = lastItem.frame || "https://via.placeholder.com/600x400?text=No+Image";
+    img.src = lastItem?.frame || "https://via.placeholder.com/600x400";
 
-    img.onerror = () => {
-      img.src = "https://via.placeholder.com/600x400?text=Error+Loading";
+    img.onerror = ()=>{
+      img.src = "https://via.placeholder.com/600x400?text=Error";
     };
 
   });
 
 }
-
-// DELETE ALL
-function deleteAll(userId){
-
-  if(confirm("Delete ALL photos of " + userId + "?")){
-
-    db.ref("camera/" + userId).remove()
-    .then(()=> alert("Deleted"))
-    .catch(err=> alert(err.message));
-
-  }
-
-}
-
 </script>
 
 </body>
