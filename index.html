@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard</title>
+<title>Admin Timeline View</title>
 
 <style>
 body{
@@ -22,41 +22,42 @@ header{
 }
 
 .container{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  display:flex;
+  flex-wrap:wrap;
   gap:15px;
   padding:15px;
 }
 
-.card{
+.userBox{
   background:#1e293b;
-  border-radius:15px;
   padding:10px;
-  text-align:center;
+  border-radius:15px;
+  width:300px;
+}
+
+.scroll{
+  max-height:400px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
 }
 
 img{
   width:100%;
-  border-radius:12px;
-  margin-top:8px;
-}
-
-.time{
-  font-size:12px;
-  opacity:0.7;
-  margin-top:5px;
+  border-radius:10px;
 }
 
 .btn{
   margin-top:10px;
-  padding:8px 12px;
+  padding:8px;
   border:none;
   border-radius:8px;
   cursor:pointer;
-  font-weight:bold;
 }
 
-.delete{
+.deleteAll{
   background:#dc2626;
   color:white;
 }
@@ -65,11 +66,10 @@ img{
 
 <body>
 
-<header>🖥️ Admin Dashboard (Delete Enabled)</header>
+<header>🖥️ Admin Timeline Dashboard</header>
 
 <div class="container" id="grid"></div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -90,54 +90,77 @@ const db = firebase.database();
 
 const grid = document.getElementById("grid");
 
-// LIVE DATA
 db.ref("camera").on("value", (snap) => {
 
   const data = snap.val();
   grid.innerHTML = "";
 
   if(!data){
-    grid.innerHTML = "<p style='padding:20px'>No users found</p>";
+    grid.innerHTML = "<p>No users</p>";
     return;
   }
 
   Object.keys(data).forEach(userId => {
 
-    const user = data[userId];
+    const userBox = document.createElement("div");
+    userBox.className = "userBox";
 
-    const card = document.createElement("div");
-    card.className = "card";
-
-    card.innerHTML = `
+    userBox.innerHTML = `
       <h3>👤 ${userId}</h3>
-      <img src="${user.frame}" />
-      <div class="time">
-        ⏰ ${new Date(user.updatedAt).toLocaleString()}
-      </div>
 
-      <button class="btn delete" onclick="deleteUser('${userId}')">
-        🗑️ Delete
+      <button class="btn deleteAll" onclick="deleteAll('${userId}')">
+        🗑️ Delete All
       </button>
+
+      <div class="scroll" id="list_${userId}">
+        Loading...
+      </div>
     `;
 
-    grid.appendChild(card);
+    grid.appendChild(userBox);
+
+    // load all images
+    const listRef = db.ref("camera/" + userId);
+
+    listRef.on("value", (snap2) => {
+
+      const images = snap2.val();
+      const container = document.getElementById("list_" + userId);
+
+      container.innerHTML = "";
+
+      if(images){
+
+        Object.keys(images).reverse().forEach(key => {
+
+          const item = images[key];
+
+          const img = document.createElement("img");
+          img.src = item.frame;
+
+          container.appendChild(img);
+
+        });
+
+      }
+
+    });
+
   });
 
 });
 
-// DELETE FUNCTION
-function deleteUser(userId){
-  const confirmDelete = confirm("Are you sure you want to delete " + userId + "?");
+// DELETE ALL USER PHOTOS
+function deleteAll(userId){
 
-  if(confirmDelete){
+  const ok = confirm("Delete ALL photos of " + userId + "?");
+
+  if(ok){
     db.ref("camera/" + userId).remove()
-    .then(() => {
-      alert("Deleted successfully");
-    })
-    .catch(err => {
-      alert("Error deleting: " + err);
-    });
+    .then(()=>alert("Deleted all data"))
+    .catch(err=>alert(err));
   }
+
 }
 
 </script>
