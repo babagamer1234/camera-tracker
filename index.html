@@ -29,16 +29,34 @@ header{
 
 .userBox{
   background:#1e293b;
-  padding:12px;
-  border-radius:12px;
+  padding:15px;
+  border-radius:15px;
 }
 
-.frame{
+img{
   width:100%;
   height:300px;
   object-fit:cover;
   border-radius:10px;
-  background:#0f172a;
+}
+
+.btn{
+  margin-top:10px;
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.deleteAll{
+  background:#dc2626;
+  color:white;
+}
+
+.deleteSingle{
+  background:#f59e0b;
+  color:black;
 }
 </style>
 </head>
@@ -68,58 +86,42 @@ const db = firebase.database();
 
 const grid = document.getElementById("grid");
 
-db.ref("camera").on("value", (snap)=>{
+db.ref("camera").on("value",(snap)=>{
 
   const data = snap.val();
-  grid.innerHTML = "";
+  grid.innerHTML="";
 
   if(!data){
-    grid.innerHTML = "<p>No users</p>";
+    grid.innerHTML="<p>No users</p>";
     return;
   }
 
   Object.keys(data).forEach(userId=>{
 
-    const box = document.createElement("div");
-    box.className = "userBox";
+    const box=document.createElement("div");
+    box.className="userBox";
 
-    box.innerHTML = `
+    const item = data[userId];
+
+    box.innerHTML=`
       <h3>👤 ${userId}</h3>
-      <img id="img_${userId}" class="frame">
+
+      <img src="${item.frame || ''}" />
+
+      <button class="btn deleteAll" onclick="deleteUser('${userId}')">
+        🗑 Delete All
+      </button>
     `;
 
     grid.appendChild(box);
-
-    loadLatest(userId);
-
   });
 
 });
 
-function loadLatest(userId){
-
-  const ref = db.ref("camera/" + userId);
-
-  ref.on("value", (snap)=>{
-
-    const data = snap.val();
-    const img = document.getElementById("img_" + userId);
-
-    if(!data){
-      img.src = "https://via.placeholder.com/600x400?text=No+Image";
-      return;
-    }
-
-    const lastItem = Object.values(data).pop();
-
-    img.src = lastItem?.frame || "https://via.placeholder.com/600x400";
-
-    img.onerror = ()=>{
-      img.src = "https://via.placeholder.com/600x400?text=Error";
-    };
-
-  });
-
+function deleteUser(userId){
+  if(confirm("Delete all data of "+userId+"?")){
+    db.ref("camera/"+userId).remove();
+  }
 }
 </script>
 
