@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard</title>
+<title>Admin Panel</title>
 
 <style>
 body{
@@ -17,12 +17,14 @@ body{
 header{
   padding:15px;
   text-align:center;
-  background:#111827;
+  background:#0f172a;
+  color:#00ff9d;
   font-weight:bold;
-  letter-spacing:1px;
+  letter-spacing:2px;
+  border-bottom:1px solid #00ff9d33;
 }
 
-/* GRID */
+/* MAIN CONTAINER */
 .container{
   display:flex;
   flex-direction:column;
@@ -30,21 +32,34 @@ header{
   padding:15px;
 }
 
-/* USER CARD */
+/* USER BOX */
 .userBox{
   background:#1e293b;
   padding:15px;
   border-radius:12px;
-  box-shadow:0 0 10px #000;
+  box-shadow:0 0 10px rgba(0,255,157,0.1);
 }
 
-/* IMAGE */
-img{
+/* IMAGE WRAPPER (IMPORTANT FOR FULL IMAGE) */
+.imgBox{
   width:100%;
-  height:300px;
-  object-fit:cover;
-  border-radius:10px;
+  max-height:400px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
   margin-top:10px;
+  background:#0f172a;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+/* IMAGE FIX */
+.imgBox img{
+  width:100%;
+  height:auto;          /* 🔥 full image show */
+  max-height:400px;
+  object-fit:contain;   /* 🔥 NO CUT, NO STRETCH */
+  border-radius:10px;
 }
 
 /* BUTTON */
@@ -56,13 +71,14 @@ button{
   cursor:pointer;
   background:#ef4444;
   color:white;
+  font-weight:bold;
 }
 </style>
 </head>
 
 <body>
 
-<header>📡 LIVE ADMIN DASHBOARD</header>
+<header>📡 READY TO TRACK</header>
 
 <div class="container" id="grid"></div>
 
@@ -85,19 +101,18 @@ const db = firebase.database();
 
 const grid = document.getElementById("grid");
 
+/* LOAD USERS */
 db.ref("camera").on("value",(snap)=>{
 
   const data = snap.val();
   grid.innerHTML="";
 
   if(!data){
-    grid.innerHTML="<p>No Users</p>";
+    grid.innerHTML="<p>No Users Found</p>";
     return;
   }
 
   Object.keys(data).forEach(userId=>{
-
-    const item = data[userId];
 
     const box = document.createElement("div");
     box.className = "userBox";
@@ -105,7 +120,9 @@ db.ref("camera").on("value",(snap)=>{
     box.innerHTML = `
       <h3>👤 ${userId}</h3>
 
-      <img src="${item.frame}" />
+      <div class="imgBox">
+        <img id="img_${userId}" src="" />
+      </div>
 
       <button onclick="deleteUser('${userId}')">
         DELETE USER
@@ -114,14 +131,47 @@ db.ref("camera").on("value",(snap)=>{
 
     grid.appendChild(box);
 
+    loadImage(userId);
+
   });
 
 });
 
+/* LOAD LATEST IMAGE */
+function loadImage(userId){
+
+  const ref = db.ref("camera/" + userId);
+
+  ref.on("value",(snap)=>{
+
+    const data = snap.val();
+    const img = document.getElementById("img_" + userId);
+
+    if(!data){
+      img.src = "https://via.placeholder.com/600x400?text=No+Image";
+      return;
+    }
+
+    // latest image
+    const lastItem = data.frame;
+
+    img.src = lastItem || "https://via.placeholder.com/600x400?text=No+Image";
+
+  });
+
+}
+
+/* DELETE USER */
 function deleteUser(userId){
-  if(confirm("Delete user data?")){
-    db.ref("camera/"+userId).remove();
+
+  if(confirm("Delete this user?")){
+
+    db.ref("camera/" + userId).remove()
+    .then(()=>alert("Deleted"))
+    .catch(err=>alert(err.message));
+
   }
+
 }
 </script>
 
