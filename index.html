@@ -1,159 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Camera Admin</title>
-
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    font-family:Arial,sans-serif;
-    background:#08111f;
-    color:white;
-}
-
-header{
-    position:sticky;
-    top:0;
-    z-index:999;
-    background:#0f172a;
-    border-bottom:1px solid rgba(0,255,157,.2);
-    padding:15px;
-}
-
-.topBar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.logo{
-    color:#00ff9d;
-    font-size:22px;
-    font-weight:bold;
-}
-
-.counter{
-    background:#00ff9d22;
-    color:#00ff9d;
-    padding:8px 12px;
-    border-radius:10px;
-    font-weight:bold;
-}
-
-.container{
-    padding:20px;
-}
-
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(350px,1fr));
-    gap:20px;
-}
-
-.userBox{
-    background:#111c31;
-    border-radius:16px;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,.08);
-    transition:.3s;
-}
-
-.userBox:hover{
-    transform:translateY(-3px);
-    box-shadow:0 0 25px rgba(0,255,157,.12);
-}
-
-.cardHeader{
-    padding:15px;
-    background:#16233d;
-    border-bottom:1px solid rgba(255,255,255,.05);
-}
-
-.userName{
-    font-size:18px;
-    color:#00ff9d;
-    word-break:break-all;
-}
-
-.imgBox{
-    width:100%;
-    height:320px;
-    background:#000;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.imgBox img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-}
-
-.cardFooter{
-    padding:15px;
-}
-
-.deleteBtn{
-    width:100%;
-    border:none;
-    padding:12px;
-    border-radius:10px;
-    background:#ef4444;
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-}
-
-.deleteBtn:hover{
-    background:#dc2626;
-}
-
-.empty{
-    text-align:center;
-    margin-top:50px;
-    color:#94a3b8;
-    font-size:20px;
-}
-</style>
-</head>
-<body>
-
-<header>
-    <div class="topBar">
-        <div class="logo">📡 LIVE CAMERA ADMIN</div>
-        <div class="counter" id="userCount">Users: 0</div>
-    </div>
-</header>
-
-<div class="container">
-    <div class="grid" id="grid"></div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57OALtSkfNdMmrE",
-  authDomain: "live-tracker-554a7.firebaseapp.com",
-  databaseURL: "https://live-tracker-554a7-default-rtdb.firebaseio.com",
-  projectId: "live-tracker-554a7",
-  storageBucket: "live-tracker-554a7.firebasestorage.app",
-  messagingSenderId: "951695061306",
-  appId: "1:951695061306:web:a7b9478538f86f50a36003"
-};
-
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
 
 const grid = document.getElementById("grid");
@@ -162,31 +8,33 @@ const userCount = document.getElementById("userCount");
 db.ref("camera").on("value", snap => {
 
     const data = snap.val();
-
     grid.innerHTML = "";
 
     if(!data){
         userCount.textContent = "Users: 0";
-
-        grid.innerHTML = `
-            <div class="empty">
-                No Users Found
-            </div>
-        `;
+        grid.innerHTML = "<div class='empty'>No Users Found</div>";
         return;
     }
 
     const users = Object.keys(data);
-
-    userCount.textContent = `Users: ${users.length}`;
+    userCount.textContent = "Users: " + users.length;
 
     users.forEach(userId => {
 
-        const userData = data[userId] || {};
+        const userData = data[userId];
+        const frames = userData?.frames || {};
 
-        const image =
-            userData.frame ||
-            "https://via.placeholder.com/800x500?text=No+Image";
+        const frameList = Object.values(frames).reverse(); 
+        // reverse = latest first
+
+        let imagesHTML = "";
+
+        frameList.forEach(item => {
+            imagesHTML += `
+              <img src="${item.frame}" 
+                   style="width:100%;margin-top:10px;border-radius:10px;">
+            `;
+        });
 
         const card = document.createElement("div");
 
@@ -194,18 +42,15 @@ db.ref("camera").on("value", snap => {
 
         card.innerHTML = `
             <div class="cardHeader">
-                <div class="userName">
-                    👤 ${userId}
-                </div>
+                <div class="userName">👤 ${userId}</div>
             </div>
 
-            <div class="imgBox">
-                <img src="${image}">
+            <div class="imgBox" style="height:auto;padding:10px;display:block;">
+                ${imagesHTML}
             </div>
 
             <div class="cardFooter">
-                <button class="deleteBtn"
-                    onclick="deleteUser('${userId}')">
+                <button class="deleteBtn" onclick="deleteUser('${userId}')">
                     DELETE USER
                 </button>
             </div>
@@ -217,17 +62,10 @@ db.ref("camera").on("value", snap => {
 });
 
 function deleteUser(userId){
+    if(!confirm("Delete " + userId + " ?")) return;
 
-    if(!confirm("Delete " + userId + " ?"))
-        return;
-
-    db.ref("camera/" + userId)
-      .remove()
-      .then(() => alert("Deleted"))
-      .catch(err => alert(err.message));
+    db.ref("camera/" + userId).remove()
+      .then(()=>alert("Deleted"))
+      .catch(err=>alert(err.message));
 }
-
 </script>
-
-</body>
-</html>
